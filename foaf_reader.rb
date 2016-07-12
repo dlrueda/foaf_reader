@@ -34,22 +34,36 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 SELECT ?interest
   WHERE { ?s foaf:interest ?interest }
 "
-puts "Interests"
-s = SPARQL.parse(interests_query)
-s.execute(graph) do |result|
-  puts result.interest
+
+tmp_query = "PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+  SELECT ?abs
+    WHERE { ?s dbo:abstract ?abs
+      FILTER (lang(?abs) = 'en')}"
+
+tmp_graph = RDF::Graph.load("http://dbpedia.org/resource/Quilting")
+sse_abstracts = SPARQL.parse(tmp_query)
+sse_abstracts.execute(tmp_graph) do |res|
+  puts res.abs
 end
 
-# 4. Write the new graph out to a file in turtle
-# file endings to try: rdf, ttl, nt
 
-RDF::Writer.open("output.ttl") do |writer|
-  graph.each_statement do |statement|
-    writer << statement
-  end
-end
-
-# Add and delete statements. Go through this tutorial: http://blog.datagraph.org/2010/03/rdf-for-ruby
-
-# 5. Remove all the "error reports to" statements
-# graph.delete([rdfrb, RDF::DC.creator, arto])
+# puts "Interests"
+# s = SPARQL.parse(interests_query)
+# s.execute(graph) do |result|
+#   puts result.interest
+# end
+#
+# # 4. Write the new graph out to a file in turtle
+# # file endings to try: rdf, ttl, nt
+#
+# RDF::Writer.open("output.ttl") do |writer|
+#   graph.each_statement do |statement|
+#     writer << statement
+#   end
+# end
+#
+# # Add and delete statements. Go through this tutorial: http://blog.datagraph.org/2010/03/rdf-for-ruby
+#
+# # 5. Remove all the "error reports to" statements
+# # graph.delete([rdfrb, RDF::DC.creator, arto])
