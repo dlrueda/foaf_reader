@@ -1,6 +1,23 @@
 require 'rdf'
 require 'linkeddata'
 
+
+def abstract_for(interest)
+  tmp_query = "PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    SELECT ?abs
+      WHERE { ?s dbo:abstract ?abs
+        FILTER (lang(?abs) = 'en')}"
+
+  tmp_graph = RDF::Graph.load(interest)
+  sse_abstracts = SPARQL.parse(tmp_query)
+  sse_abstracts.execute(tmp_graph) do |res|
+    puts res.abs
+  end
+end
+
+
+
 # 1. Load my own FOAF file
 #graph = RDF::Graph.load("foaf_files/foaf.rdf")
 graph = RDF::Graph.load("http://www.stanford.edu/~dlrueda/foaf.rdf")
@@ -10,7 +27,7 @@ puts graph.inspect
 
 query = "
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-SELECT *
+SELECT DISTINCT ?o
   WHERE { ?s foaf:knows ?o }
 "
 
@@ -20,6 +37,10 @@ puts "before loading"
 sse = SPARQL.parse(query)
 sse.execute(graph) do |result|
   puts result.o
+  #explicitly cast the result as an RDF resource
+  #triples = RDF::Resource(RDF::URI.new(result.o))
+  #graph.load(triples)
+  #add to your graph
   graph.load(result.o)
 end
 
@@ -29,24 +50,20 @@ sse.execute(graph) do |result|
 end
 
 # query for interests
+puts "Querying interests"
 interests_query = "
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 SELECT ?interest
   WHERE { ?s foaf:interest ?interest }
 "
 
-tmp_query = "PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-  SELECT ?abs
-    WHERE { ?s dbo:abstract ?abs
-      FILTER (lang(?abs) = 'en')}"
-
-tmp_graph = RDF::Graph.load("http://dbpedia.org/resource/Quilting")
-sse_abstracts = SPARQL.parse(tmp_query)
-sse_abstracts.execute(tmp_graph) do |res|
-  puts res.abs
+q_interests = SPARQL.parse(interests_query)
+q_interests.execute(graph) do |result|
+  puts result.interest
+  abstract_for(result.interest)
 end
 
+#abstract_for('http://dbpedia.org/resource/Quilting')
 
 # puts "Interests"
 # s = SPARQL.parse(interests_query)
